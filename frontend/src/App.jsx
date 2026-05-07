@@ -1,42 +1,22 @@
-// File: frontend/src/App.jsx
+// frontend/src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import AddUser from './pages/AddUser';
+import EditUser from './pages/EditUser';
 
-import { useContext } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, AuthContext } from "./context/AuthContext";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import { TaskProvider } from "./context/TaskContext";
-
-// ── PrivateRoute: Redirects unauthenticated users to /login ──────────────────
-const PrivateRoute = ({ children }) => {
-  const { user } = useContext(AuthContext);
-  return user ? children : <Navigate to="/login" replace />;
-};
-
-// ── App ───────────────────────────────────────────────────────────────────────
 const App = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <Router>
+      <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+        <Navbar />
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <TaskProvider>
-                  <Dashboard />
-                </TaskProvider>
-              </PrivateRoute>
-            }
-          />
-          {/* Catch-all: redirect unknown routes to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/add" element={<AddUser />} />
+          <Route path="/edit/:id" element={<EditUser />} />
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+      </div>
+    </Router>
   );
 };
 

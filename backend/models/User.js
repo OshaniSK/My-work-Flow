@@ -1,54 +1,22 @@
-// File: backend/models/User.js
+// backend/models/User.js
+const mongoose = require('mongoose');
 
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const userSchema = new mongoose.Schema(
-  {
+const userSchema = new mongoose.Schema({
     name: {
-      type: String,
-      required: [true, "Please provide a name"],
-      trim: true,
+        type: String,
+        required: [true, 'Please add a name']
     },
     email: {
-      type: String,
-      required: [true, "Please provide an email"],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email address",
-      ],
+        type: String,
+        required: [true, 'Please add an email'],
+        unique: true
     },
-    password: {
-      type: String,
-      required: [true, "Please provide a password"],
-      minlength: [6, "Password must be at least 6 characters"],
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
-
-// ── Hash password before saving ───────────────────────────────────────────────
-userSchema.pre("save", async function (next) {
-  // Only hash if the password field has been modified (or is new)
-  if (!this.isModified("password")) {
-    return next();
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+    age: {
+        type: Number,
+        required: [true, 'Please add an age']
+    }
+}, {
+    timestamps: true
 });
 
-// ── Instance method: compare entered password with hashed password ────────────
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
