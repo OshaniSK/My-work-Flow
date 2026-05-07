@@ -6,6 +6,7 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import { TaskProvider } from "./context/TaskContext";
 
 // ── PrivateRoute: Redirects unauthenticated users to /login ──────────────────
 const PrivateRoute = ({ children }) => {
@@ -25,7 +26,9 @@ const App = () => {
             path="/"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <TaskProvider>
+                  <Dashboard />
+                </TaskProvider>
               </PrivateRoute>
             }
           />

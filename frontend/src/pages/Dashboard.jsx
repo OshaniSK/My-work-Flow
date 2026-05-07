@@ -1,34 +1,11 @@
 // File: frontend/src/pages/Dashboard.jsx
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-
-// Placeholder TaskCard for layout
-const TaskCard = ({ task }) => (
-  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-    <h3 className="font-bold text-gray-900 dark:text-white truncate">{task.title}</h3>
-    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 min-h-[40px]">{task.description}</p>
-    <div className="mt-4 flex items-center justify-between">
-      <div className="flex gap-2">
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-          task.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-        }`}>
-          {task.priority}
-        </span>
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-          task.status === 'done' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' :
-          task.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-        }`}>
-          {task.status.replace('-', ' ')}
-        </span>
-      </div>
-    </div>
-  </div>
-);
+import TaskCard from "../components/TaskCard";
+import AddTaskModal from "../components/AddTaskModal";
+import { TaskContext } from "../context/TaskContext";
 
 const Dashboard = () => {
   // Navigation State
@@ -42,13 +19,8 @@ const Dashboard = () => {
   // Modal State
   const [showModal, setShowModal] = useState(false);
 
-  // Placeholder Tasks Data (will be replaced by Context)
-  const tasks = [
-    { id: 1, title: "Review pull requests", description: "Review and merge the pending PRs for the authentication flow.", priority: "high", status: "todo" },
-    { id: 2, title: "Update documentation", description: "Write README instructions for local setup.", priority: "medium", status: "in-progress" },
-    { id: 3, title: "Fix layout bugs", description: "Address the responsive design issues on mobile devices.", priority: "high", status: "done" },
-    { id: 4, title: "Plan sprint", description: "Organize next week's tickets.", priority: "low", status: "todo" },
-  ];
+  // Consume TaskContext
+  const { tasks, loading, error, addTask, updateTask, deleteTask } = useContext(TaskContext);
 
   // Apply filters
   const filteredTasks = tasks.filter((task) => {
@@ -56,10 +28,14 @@ const Dashboard = () => {
     const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
     const matchesStatus = filterStatus === "all" || task.status === filterStatus;
     
-    // Simple tab logic
+    // Tab logic
     let matchesTab = true;
     if (activeTab === "high" && task.priority !== "high") matchesTab = false;
     if (activeTab === "completed" && task.status !== "done") matchesTab = false;
+    if (activeTab === "today") {
+      const today = new Date().toISOString().split("T")[0];
+      if (!task.dueDate || task.dueDate.split("T")[0] !== today) matchesTab = false;
+    }
     
     return matchesSearch && matchesPriority && matchesStatus && matchesTab;
   });
@@ -76,6 +52,12 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 capitalize">
               {activeTab === 'all' ? 'All Tasks' : activeTab === 'high' ? 'High Priority' : activeTab}
             </h1>
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg">
+                {error}
+              </div>
+            )}
 
             {/* Filter Bar */}
             <div className="mb-8 flex flex-wrap gap-6 items-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -121,16 +103,29 @@ const Dashboard = () => {
             </div>
 
             {/* Task Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map(task => <TaskCard key={task.id} task={task} />)
-              ) : (
-                <div className="col-span-full py-16 flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                  <span className="text-4xl mb-4">📭</span>
-                  <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks found matching your filters.</p>
-                </div>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex justify-center py-20 text-indigo-600">
+                <p className="text-lg font-medium animate-pulse">Loading tasks...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredTasks.length > 0 ? (
+                  filteredTasks.map(task => (
+                    <TaskCard 
+                      key={task._id} 
+                      task={task} 
+                      onDelete={deleteTask} 
+                      onUpdate={updateTask} 
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                    <span className="text-4xl mb-4">📭</span>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks found matching your filters.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -144,20 +139,12 @@ const Dashboard = () => {
         +
       </button>
 
-      {/* Placeholder AddTaskModal */}
+      {/* Add Task Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Task</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Modal form will go here...</p>
-            <button 
-              onClick={() => setShowModal(false)}
-              className="w-full py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <AddTaskModal 
+          onClose={() => setShowModal(false)} 
+          onAdd={addTask} 
+        />
       )}
     </div>
   );
